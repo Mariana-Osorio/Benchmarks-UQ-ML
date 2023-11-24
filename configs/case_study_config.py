@@ -1,8 +1,11 @@
 import numpy as np
+import os
 
 # Case Study configuration settings
 train_N_iter = [25, 50, 100, 250, 500, 1000, 2000]
 k_iter = [1/12, 2, 3, 4, 5, 8, 10, 12]
+casestudy_dir = os.path.abspath(os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), '..', 'casestudies'))
 
 # Ishigami function
 ishigami_settings = {
@@ -117,8 +120,7 @@ airfoil_settings = {
     "CS_type": "ML",
     "Name": "Airfoil",
     "rep_iter": [1/20, 1/10, 1/5, 1/3, 2, 3, 5, 10],
-    "file": "/home/moo/Documents/ETH/2023_Herbst/Master_Thesis/Benchmark_Code"
-            "/case_studies/models/airfoil_self_noise.dat",
+    "file": os.path.join(casestudy_dir, "models/airfoil_self_noise.dat"),
     "typ": "csv",
     "sep": '\t',
     "header": None,
@@ -132,8 +134,7 @@ abalone_settings = {
     "CS_type": "ML",
     "Name": "Abalone",
     "rep_iter": k_iter,
-    "file": "/home/moo/Documents/ETH/2023_Herbst/Master_Thesis/Benchmark_Code"
-            "/case_studies/models/abalone_dataset.data",
+    "file": os.path.join(casestudy_dir, "models/abalone_dataset.data"),
     "typ": "csv",
     "sep": ',',
     "header": None,
@@ -147,8 +148,7 @@ ailerons_settings = {
     "CS_type": "ML",
     "Name": "Ailerons",
     "rep_iter": [1/20, 1/10, 1/5, 1/3, 2, 3, 5, 10],
-    "file": "/home/moo/Documents/ETH/2023_Herbst/Master_Thesis/Benchmark_Code"
-            "/case_studies/models/ailerons.arff",
+    "file": os.path.join(casestudy_dir, "models/ailerons.arff"),
     "typ": "arff",
     "names": ['climbRate', 'Sgz', 'p', 'q', 'curPitch', 'curRoll', 'absRoll',
               'diffClb', 'diffRollRate', 'diffDiffClb', 'SeTime1', 'SeTime2',
@@ -166,8 +166,7 @@ concrete_settings = {
     "CS_type": "ML",
     "Name": "Concrete",
     "rep_iter": [1/10, 1/5, 1/3, 2, 3, 5, 10],
-    "file": "/home/moo/Documents/ETH/2023_Herbst/Master_Thesis/Benchmark_Code"
-            "/case_studies/models/Concrete_Data.xls",
+    "file": os.path.join(casestudy_dir, "models/Concrete_Data.xls"),
     "typ": "xlsx",
     "header": 1,
     "names": ['cement', 'slag', 'ash', 'water', 'superplasticizer',
@@ -179,8 +178,7 @@ cpu_activity_settings = {
     "CS_type": "ML",
     "Name": "CPU_activity",
     "rep_iter": [1/20, 1/10, 1/5, 1/3, 2, 3, 5, 10],
-    "file": "/home/moo/Documents/ETH/2023_Herbst/Master_Thesis/Benchmark_Code"
-            "/case_studies/models/dataset_2183_cpu_act.arff",
+    "file": os.path.join(casestudy_dir, "models/dataset_2183_cpu_act.arff"),
     "typ": "arff",
     "names": ['lread', 'lwrite', 'scall', 'sread', 'swrite', 'fork', 'exec',
               'rchar', 'wchar', 'pgout', 'ppgout', 'pgfree', 'pgscan', 'atch',
@@ -193,8 +191,7 @@ wine_quality_settings = {
     "CS_type": "ML",
     "Name": "Wine_Quality",
     "rep_iter": [1/20, 1/10, 1/5, 1/3, 2, 3, 5, 10],
-    "file": "/home/moo/Documents/ETH/2023_Herbst/Master_Thesis/Benchmark_Code"
-            "/case_studies/models/wine_quality.arff",
+    "file": os.path.join(casestudy_dir, "models/wine_quality.arff"),
     "typ": "arff",
     "names": ['fixed_acidity', 'volatile_acidity', 'citric_acid',
               'residual_sugar', 'chlorides', 'free_sulfur_dioxide',
