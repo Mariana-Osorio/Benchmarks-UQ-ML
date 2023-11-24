@@ -49,7 +49,7 @@ def run_benchmark(competitors: list, case_study: str,
                   rep_path=None, rep_num=1, file_dir="", verbose=0,
                   case_study_config=case_study_config,
                   competitor_config=competitor_config,
-                  hypertune_iter=1):
+                  hypertune_iter=20):
     """Run a benchmark for a given case study and competitors. """
 
     case_study_settings = deepcopy(case_study_config)
@@ -93,3 +93,26 @@ def run_benchmark(competitors: list, case_study: str,
             f.write(f"{key}: {info_benchmarks[key]}\n")
 
     return benchmarks
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--case_study", type=str, default="ishigami",
+                        help="Case study to run.")
+    parser.add_argument("--competitors", type=str, nargs='+',
+                        default=["rf", "xgb", "mlp", "resnet",
+                                 "ft_transformer", "pce", "kriging", "pck"],
+                        help="Competitors to run.")
+    parser.add_argument("--rep_path", type=str, default=None,
+                        help="Path to replications.")
+    parser.add_argument("--rep_num", type=int, default=1,
+                        help="Number of replications to generate.")
+    parser.add_argument("--file_dir", type=str, default="",
+                        help="Directory to save the results.")
+    parser.add_argument("--verbose", type=int, default=0,
+                        help="Verbosity level.")
+    parser.add_argument("--hypertune_iter", type=int, default=20,
+                        help="Number of iterations for hyperparameter tuning.")
+    args = parser.parse_args()
+    run_benchmark(**vars(args))
