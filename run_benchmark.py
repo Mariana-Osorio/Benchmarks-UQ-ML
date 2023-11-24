@@ -69,7 +69,7 @@ def run_benchmark(competitors: list, case_study: str,
         rep_path = f'{rep_settings["Name"]}_' \
             f'{"_".join(map(str,rep_settings["rep_iter"]))}'
         case_study_reps.save(file_dir, rep_path)
-        rep_path = f"{file_dir}/{rep_path}.obj"
+        rep_path = f"{file_dir}/{rep_path}."
     else:
         case_study_reps = load_object(rep_path)
     benchmarks["replications"] = case_study_reps
