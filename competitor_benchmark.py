@@ -458,42 +458,56 @@ class CompetitorBenchmarkResults:
         if metric == "test_mse_norm":
             for i in range(len(self)):
                 mse = self[i].get_metric("test_mse")
+                mse = mse[~np.isnan(mse)]
                 var = self[i].get_metric("test_var")
+                var = var[~np.isnan(var)]
                 data.append(agg_func(mse/var))
 
         elif metric == "train_mse_norm":
             for i in range(len(self)):
                 mse = self[i].get_metric("train_mse")
+                mse = mse[~np.isnan(mse)]
                 var = self[i].get_metric("train_var")
+                var = var[~np.isnan(var)]
                 data.append(agg_func(mse/var))
 
         elif metric == "test_mae_norm":
             for i in range(len(self)):
                 mae = self[i].get_metric("test_mae")
+                mae = mae[~np.isnan(mae)]
                 std = self[i].get_metric("test_var")**0.5
+                std = std[~np.isnan(std)]
                 data.append(agg_func(mae/std))
 
         elif metric == "train_mae_norm":
             for i in range(len(self)):
                 mae = self[i].get_metric("train_mae")
+                mae = mae[~np.isnan(mae)]
                 std = self[i].get_metric("train_var")**0.5
+                std = std[~np.isnan(std)]
                 data.append(agg_func(mae/std))
 
         elif metric == "test_rmse_norm":
             for i in range(len(self)):
                 rmse = self[i].get_metric("test_rmse")
+                rmse = rmse[~np.isnan(rmse)]
                 std = self[i].get_metric("test_var")**0.5
+                std = std[~np.isnan(std)]
                 data.append(agg_func(rmse/std))
 
         elif metric == "train_rmse_norm":
             for i in range(len(self)):
                 rmse = self[i].get_metric("train_rmse")
+                rmse = rmse[~np.isnan(rmse)]
                 std = self[i].get_metric("train_var")**0.5
+                std = std[~np.isnan(std)]
                 data.append(agg_func(rmse/std))
 
         else:
             for i in range(len(self)):
-                data.append(agg_func(self[i].get_metric(metric)))
+                metric_data = self[i].get_metric(metric)
+                metric_data = metric_data[~np.isnan(metric_data)]
+                data.append(agg_func(metric_data))
         return np.array(data)
 
 
