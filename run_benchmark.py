@@ -95,6 +95,45 @@ def run_benchmark(competitors: list, case_study: str,
     return benchmarks
 
 
+def run_benchmark_rep(competitors: list,
+                      case_study_reps: cb.ReplicationsList,
+                      file_dir="", verbose=0,
+                      competitor_config=competitor_config,
+                      hypertune_iter=20):
+    """Run a benchmark for a given case study and competitors. """
+
+    competitor_settings = deepcopy(competitor_config)
+    file_dir = os.path.dirname(os.path.abspath(__file__)) \
+        if file_dir == "" else file_dir
+    if not os.path.exists(file_dir):
+        os.mkdir(file_dir)
+    info_benchmarks = {}
+    benchmarks = {}
+    benchmarks["name"] = case_study_reps.case_study
+    info_benchmarks["name"] = case_study_reps.case_study
+    benchmarks["replications"] = case_study_reps
+    info_benchmarks["replications"] = case_study_reps.names
+    if verbose > 0:
+        print(f"Loaded replications for {case_study_reps.case_study}.")
+    for comp_name in competitors:
+        comp_config = competitor_settings[comp_name]
+        competitor_benchmark, comp_info = cb.competitor_benchmark(
+            case_study_reps, comp_name, config=comp_config["config"],
+            report_dir=file_dir, verbose=verbose,
+            hypertune_iter=hypertune_iter, return_path=True)
+        benchmarks[comp_name] = competitor_benchmark
+        info_benchmarks[comp_name] = comp_info
+        if verbose > 0:
+            print(f"Benchmark ran for {comp_name}.")
+
+    info_file = f"{file_dir}/benchmark_{info_benchmarks['name']}_info.txt"
+    with open(info_file, 'w') as f:
+        for key in info_benchmarks.keys():
+            f.write(f"{key}: {info_benchmarks[key]}\n")
+
+    return benchmarks
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
