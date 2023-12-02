@@ -2,6 +2,8 @@ import typing as ty
 import numpy as np
 import sklearn.metrics as skm
 import matplotlib.pyplot as plt
+import pandas as pd
+import dataframe_image as dfi
 import os
 from sklearn.model_selection import cross_validate
 
@@ -298,21 +300,24 @@ def y_y_plot(benchmark_list: list, name: str = "Benchmark", figsize=(14, 10),
                     for i in range(len(y_pred_folds)):
                         true_y = model.replications.y[
                             model.replications.ixs[i][1]]
-                        axs[k, j].scatter(
-                            true_y, y_pred_folds[i], color=cmap(i),
-                            label=f"fold={i}", s=5)
+                        if len(y_pred_folds) != 0:
+                            axs[k, j].scatter(
+                                true_y, y_pred_folds[i], color=cmap(i),
+                                label=f"fold={i}", s=5)
                 else:
                     true_y = model.replications.y[model.replications.ixs[
                         rep_num][1]]
-                    axs[k, j].scatter(
-                        true_y, y_pred_folds, color=cmap(rep_num),
-                        label=f"rep={rep_num}", s=5)
+                    if len(y_pred_folds) != 0:
+                        axs[k, j].scatter(
+                            true_y, y_pred_folds, color=cmap(rep_num),
+                            label=f"rep={rep_num}", s=5)
 
             if j == 0:
                 axs[k, j].set_ylabel("Predicted y")
             if j == len(benchmark) - 1:
                 axs[k, j].yaxis.set_label_position("right")
-                axs[k, j].set_ylabel(f"{model.name}", rotation=270,
+                axs[k, j].set_ylabel(f"{model.cv_competitor.name}",
+                                     rotation=270,
                                      labelpad=12, fontsize=11)
             if k == len(benchmark_list) - 1:
                 axs[k, j].set_xlabel("True y")
@@ -402,6 +407,144 @@ def plot_benchmark_metrics(benchmark_list: list, name: str = "Benchmark",
     y_y_plot(benchmark_list, name)
     if save_dir is not None:
         plt.savefig(f"{save_dir}/{name}_y_y_plot.png", bbox_inches='tight')
+        plt.show()
+    else:
+        plt.show()
+
+
+def hypertune_dict(metrics):
+    hyperparam_tune = {}
+    hyperparam_tune["train_N"] = []
+    hyperparam_tune["time"] = []
+    hyperparam_tune["best_score"] = []
+    hyperparam_tune["best_params"] = []
+    for metric in metrics:
+        results = metric.cv_competitor.hyperparam_search["cv_results_"]
+        train_N = metric.replications.train_N
+
+        hyperparam_tune["train_N"].append(train_N)
+        hyperparam_tune["time"].append(
+            metric.cv_competitor.hyperparam_search["time"])
+        hyperparam_tune["best_score"].append(
+            results["mean_test_score"][
+                np.argwhere(results["rank_test_score"] == 1)[0]][0])
+        hyperparam_tune["best_params"].append(
+            metric.cv_competitor.hyperparam_search["best_params"])
+        hyperparam_tune[train_N] = {}
+        hyperparam_tune[train_N]["iterations"] = np.array(
+            range(1, len(results["mean_test_score"])+1))
+        hyperparam_tune[train_N]["mean_fit_time"] = \
+            results["mean_fit_time"]
+        hyperparam_tune[train_N]["mean_test_score"] = \
+            results["mean_test_score"]
+        best_score = []
+        for score in results["mean_test_score"]:
+            prev_score = best_score[-1] if len(best_score) > 0 else np.nan
+            if np.isnan(prev_score) or score > prev_score:
+                best_score.append(score)
+            else:
+                best_score.append(prev_score)
+        hyperparam_tune[train_N]["best_score"] = np.array(best_score)
+        hyperparam_tune[train_N]["rank_test_score"] = \
+            results["rank_test_score"]
+        for key in results:
+            if key.startswith("param_"):
+                hyperparam_tune[train_N][key] = results[key]
+
+    return hyperparam_tune
+
+
+def df_hypertune(benchmark, save_dir: str = None, name: str = "Benchmark"):
+    results = hypertune_dict(benchmark)
+    df = pd.DataFrame()
+    df["train_N"] = results["train_N"]
+    df["score"] = results["best_score"]
+    df = pd.concat([df, pd.DataFrame(results["best_params"])], axis=1)
+
+    if save_dir is not None:
+        dfi.export(df,
+                   os.path.join(save_dir,
+                                f"{name}_{benchmark.name}_hypertune_df.png"),
+                   table_conversion='chrome',
+                   chrome_path='/usr/bin/brave-browser')
+
+    return df
+
+
+def plot_hypertune(benchmark_list: list, name: str = "Benchmark",
+                   save_dir: str = None):
+    cmap = plt.get_cmap("tab10")
+    fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+    dfs = []
+    for i, benchmark in enumerate(benchmark_list):
+        dfs.append(df_hypertune(benchmark, save_dir=save_dir, name=name))
+        hyperparam_data = hypertune_dict(benchmark)
+        axs[0].plot(hyperparam_data["train_N"], hyperparam_data["best_score"],
+                    label=benchmark.name, marker='o', color=cmap(i))
+        axs[0].set_xlabel("Train N")
+        axs[0].set_ylabel("Best Score (-MSE)")
+        axs[0].set_title(f"{name}: hyperparameter tuning -MSE")
+        axs[0].legend()
+        axs[0].set_xticks(hyperparam_data["train_N"])
+        axs[0].set_xticklabels(
+            axs[0].get_xticklabels(), rotation=90, ha='right')
+        axs[1].plot(hyperparam_data["train_N"], hyperparam_data["time"],
+                    label=benchmark.name, marker='o', color=cmap(i))
+        axs[1].set_xlabel("Train N")
+        axs[1].set_ylabel("Time (s)")
+        axs[1].set_title(f"{name}: hyperparameter tuning time")
+        axs[1].legend()
+        axs[1].set_xticks(hyperparam_data["train_N"])
+        axs[1].set_xticklabels(
+            axs[1].get_xticklabels(), rotation=90, ha='right')
+
+    if save_dir is not None:
+        plt.savefig(f"{save_dir}/{name}_hypertune.png", bbox_inches='tight')
+        plt.show()
+    else:
+        plt.show()
+    return dfs
+
+
+def plot_categorical_params(benchmark, param_name: str,
+                            figsize=(6, 16), title_pos=0.98,
+                            save_dir: str = None, name: str = "Benchmark"):
+    fig, axs = plt.subplots(len(benchmark), 1, figsize=figsize, sharex=True)
+    results = hypertune_dict(benchmark)
+    cmap = plt.get_cmap("tab10")
+
+    for i, train_N in enumerate(results["train_N"]):
+        iters = results[train_N]["iterations"]
+        mse = results[train_N]["mean_test_score"]
+        best = results[train_N]["best_score"]
+        param = list(results[train_N][f"param_{param_name}"].data)
+        vals = np.unique(param)
+        param = np.array(param)
+        color_dic = {}
+        for j, val in enumerate(vals):
+            color_dic[str(val)] = cmap(j)
+        color = color_dic[str(results["best_params"][i][param_name])]
+        axs[i].plot(iters, best, label="best", color=color, zorder=-1)
+        for j, val in enumerate(vals):
+            axs[i].scatter(iters[param == val], mse[param == val],
+                           label=str(val), marker='o',
+                           color=color_dic[str(val)])
+        axs[i].set_ylabel("-MSE")
+        axs[i].set_title(f"Training size: {train_N}")
+        if i == 0:
+            axs[i].legend(title=f"{param_name}:", bbox_to_anchor=(1.01, 1),
+                          loc='upper left')
+    axs[i].set_xlabel("Iterations")
+    plt.xticks(rotation=45)
+    fig.suptitle(
+        f"{name}: {benchmark.name}: {param_name} hyperparameter tuning",
+        fontsize=14, y=title_pos)
+    plt.tight_layout(pad=2.0)
+
+    if save_dir is not None:
+        plt.savefig(f"{save_dir}/{name}_{benchmark.name}"
+                    f"_{param_name}_hypertune.png",
+                    bbox_inches='tight')
         plt.show()
     else:
         plt.show()
