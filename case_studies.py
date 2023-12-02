@@ -898,10 +898,6 @@ class Replications:
 
 class ReplicationsList:
     def __init__(self, replications: list) -> None:
-        assert all([type(rep).__name__ == "Replications"
-                    for rep in replications]), \
-                        'replications must be a list of Replications objects.'
-        # assert case study is the same among all reps
         assert len(set([rep.case_study for rep in replications])) == 1, \
             'All replications must be from the same case study.'
         self.X = replications[0].X
@@ -1022,6 +1018,7 @@ class ReplicationsList:
         rep_dict["train_N"] = self.train_N[ix]
         rep_dict["test_N"] = self.test_N[ix]
         rep_dict["name"] = self.names[ix]
+        rep_dict["case_study"] = self.case_study
         rep_dict["info"] = self.info[ix]
         return rep_dict
 
