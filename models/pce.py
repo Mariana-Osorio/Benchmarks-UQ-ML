@@ -207,11 +207,11 @@ class PCE_Regressor_UQLab(BaseEstimator, RegressorMixin):
         self.X_ = X
         self.y_ = y
 
-        if self.uq is None:
-            mySession = sessions.cloud()
-            self.uq = mySession.cli
-            mySession.reset()
-            mySession.timeout = 900
+        # if self.uq is None:
+        mySession = sessions.cloud()
+        self.uq = mySession.cli
+        mySession.reset()
+        mySession.timeout = 2700
 
         self.uq.rng(self.random_state, 'twister')
 

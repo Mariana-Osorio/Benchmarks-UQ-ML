@@ -95,11 +95,11 @@ class Kriging_Regressor_UQLab(BaseEstimator, RegressorMixin):
         self.__model = None
 
     def fit(self, X, y):
-        if self.uq is None:
-            mySession = sessions.cloud()
-            self.uq = mySession.cli
-            mySession.reset()
-            mySession.timeout = 900
+        # if self.uq is None:
+        mySession = sessions.cloud()
+        self.uq = mySession.cli
+        mySession.reset()
+        mySession.timeout = 2700
         self.uq.rng(self.random_state, 'twister')
 
         X, y = check_X_y(X, y)
