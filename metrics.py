@@ -526,14 +526,18 @@ def plot_categorical_params(benchmark, param_name: str,
         color = color_dic[str(results["best_params"][i][param_name])]
         axs[i].plot(iters, best, label="best", color=color, zorder=-1)
         for j, val in enumerate(vals):
+            if str(val) == "default" and \
+             param_name == "TruncOptions__MaxInteraction":
+                label = "M"
+            else:
+                label = str(val)
             axs[i].scatter(iters[param == val], mse[param == val],
-                           label=str(val), marker='o',
+                           label=label, marker='o',
                            color=color_dic[str(val)])
         axs[i].set_ylabel("-MSE")
         axs[i].set_title(f"Training size: {train_N}")
-        if i == 0:
-            axs[i].legend(title=f"{param_name}:", bbox_to_anchor=(1.01, 1),
-                          loc='upper left')
+        axs[i].legend(title=f"{param_name}:", bbox_to_anchor=(1.01, 1),
+                      loc='upper left')
     axs[i].set_xlabel("Iterations")
     plt.xticks(rotation=45)
     fig.suptitle(
