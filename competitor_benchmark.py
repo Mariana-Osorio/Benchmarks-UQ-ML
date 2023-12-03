@@ -159,8 +159,12 @@ class Competitor:
             else:
                 setattr(self.__model, "verbose", verbose)
 
-        X = replications.X.astype(np.float32)
-        y = replications.y.astype(np.float32)
+        if self.name in ["mlp", "resnet", "ft_transformer"]:
+            X = replications.X.astype(np.float32)
+            y = replications.y.astype(np.float32)
+        else:
+            X = replications.X
+            y = replications.y
 
         if len(y.shape) != 1:
             y = y.ravel()
