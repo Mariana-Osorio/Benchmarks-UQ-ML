@@ -312,7 +312,7 @@ class CompetitorMetrics():
             metric = f'train_{metric}'
 
         if "rmse" in metric:
-            std = self.get_metric(metric.replace("rmse", "pred_var"),
+            std = self.get_metric(metric.replace("rmse", "var"),
                                   test=test)**0.5
             if return_name:
                 return self.get_metric(metric, test=test) / std, \
@@ -320,7 +320,7 @@ class CompetitorMetrics():
             else:
                 return self.get_metric(metric, test=test) / std
         elif "mae" in metric:
-            std = self.get_metric(metric.replace("mae", "pred_var"),
+            std = self.get_metric(metric.replace("mae", "var"),
                                   test=test)**0.5
             if return_name:
                 return self.get_metric(metric, test=test) / std, \
@@ -328,7 +328,7 @@ class CompetitorMetrics():
             else:
                 return self.get_metric(metric, test=test) / std
         elif "mse" in metric:
-            var = self.get_metric(metric.replace("mse", "pred_var"),
+            var = self.get_metric(metric.replace("mse", "var"),
                                   test=test)
             if return_name:
                 return self.get_metric(metric, test=test) / var, \
