@@ -8,6 +8,10 @@ import os
 from sklearn.model_selection import cross_validate
 
 
+def first(x):
+    return x[0]
+
+
 def calculate_metrics(
     y: np.ndarray,
     prediction: np.ndarray,
@@ -275,11 +279,11 @@ def plot_metric(metric: str, benchmark_list: list, name: str = "Benchmark",
                  model_data[model.name][metric]['mean'],
                  label="train_var", color='black')
 
-    plt.legend(title="Model")
+    plt.legend(title="Competitor", bbox_to_anchor=(1.01, 1),
+               loc='upper left')
     plt.xlabel('train_N')
     plt.ylabel(f'{metric_titles[metric]}')
     if log:
-        plt.ylabel(f'log({metric_titles[metric]})')
         plt.yscale('log')
     plt.xticks(model.train_N)
     plt.xticks(rotation=90)
@@ -455,11 +459,14 @@ def hypertune_dict(metrics):
 
 
 def df_hypertune(benchmark, save_dir: str = None, name: str = "Benchmark"):
+    pd.set_option('display.float_format', '{:.2g}'.format)
     results = hypertune_dict(benchmark)
+    var = benchmark.get_agg_metric("test_var", first)
     df = pd.DataFrame()
     df["train_N"] = results["train_N"]
-    df["score"] = results["best_score"]
+    df["score"] = np.array(results['best_score'])**2/var
     df = pd.concat([df, pd.DataFrame(results["best_params"])], axis=1)
+    df = df.set_index("train_N").T.rename_axis("best_params")
 
     if save_dir is not None:
         dfi.export(df,
@@ -479,24 +486,28 @@ def plot_hypertune(benchmark_list: list, name: str = "Benchmark",
     for i, benchmark in enumerate(benchmark_list):
         dfs.append(df_hypertune(benchmark, save_dir=save_dir, name=name))
         hyperparam_data = hypertune_dict(benchmark)
-        axs[0].plot(hyperparam_data["train_N"], hyperparam_data["best_score"],
+        var = benchmark.get_agg_metric("test_var", first)
+        best_score = np.array(hyperparam_data['best_score'])**2/var
+        axs[0].plot(hyperparam_data["train_N"], best_score,
                     label=benchmark.name, marker='o', color=cmap(i))
         axs[0].set_xlabel("Train N")
-        axs[0].set_ylabel("Best Score (-MSE)")
-        axs[0].set_title(f"{name}: hyperparameter tuning -MSE")
-        axs[0].legend()
+        axs[0].set_ylabel("Best Score (MSE_norm)")
+        axs[0].set_title(f"{name}: hyperparameter tuning MSE_norm")
         axs[0].set_xticks(hyperparam_data["train_N"])
         axs[0].set_xticklabels(
             axs[0].get_xticklabels(), rotation=90, ha='right')
+        axs[0].set_yscale('log')
         axs[1].plot(hyperparam_data["train_N"], hyperparam_data["time"],
                     label=benchmark.name, marker='o', color=cmap(i))
         axs[1].set_xlabel("Train N")
         axs[1].set_ylabel("Time (s)")
         axs[1].set_title(f"{name}: hyperparameter tuning time")
-        axs[1].legend()
         axs[1].set_xticks(hyperparam_data["train_N"])
         axs[1].set_xticklabels(
             axs[1].get_xticklabels(), rotation=90, ha='right')
+        axs[1].set_yscale('log')
+    axs[1].legend(title="Competitor", bbox_to_anchor=(1.01, 1),
+                  loc='upper left')
 
     if save_dir is not None:
         plt.savefig(f"{save_dir}/{name}_hypertune.png", bbox_inches='tight')
@@ -512,11 +523,12 @@ def plot_categorical_params(benchmark, param_name: str,
     fig, axs = plt.subplots(len(benchmark), 1, figsize=figsize, sharex=True)
     results = hypertune_dict(benchmark)
     cmap = plt.get_cmap("tab10")
+    var = benchmark.get_agg_metric("test_var", first)
 
     for i, train_N in enumerate(results["train_N"]):
         iters = results[train_N]["iterations"]
-        mse = results[train_N]["mean_test_score"]
-        best = results[train_N]["best_score"]
+        mse = results[train_N]["mean_test_score"]**2/var[i]
+        best = results[train_N]["best_score"]**2/var[i]
         param = list(results[train_N][f"param_{param_name}"].data)
         vals = np.unique(param)
         param = np.array(param)
@@ -534,7 +546,8 @@ def plot_categorical_params(benchmark, param_name: str,
             axs[i].scatter(iters[param == val], mse[param == val],
                            label=label, marker='o',
                            color=color_dic[str(val)])
-        axs[i].set_ylabel("-MSE")
+        axs[i].set_ylabel("MSE_norm")
+        axs[i].set_yscale('log')
         axs[i].set_title(f"Training size: {train_N}")
         axs[i].legend(title=f"{param_name}:", bbox_to_anchor=(1.01, 1),
                       loc='upper left')
@@ -552,3 +565,66 @@ def plot_categorical_params(benchmark, param_name: str,
         plt.show()
     else:
         plt.show()
+
+
+def hypertune_time_dfs(benchmark_list: list, name: str = "Benchmark",
+                       save_dir: str = None):
+    dfs = {}
+    for i, benchmark in enumerate(benchmark_list):
+        hyperparam_data = hypertune_dict(benchmark)
+        if i == 0:
+            df = pd.DataFrame()
+            df['train_N'] = hyperparam_data["train_N"]
+        hyperopt_time = hyperparam_data["time"]
+        fit_time = benchmark.get_agg_metric("fit_time", np.sum)
+        times = (hyperopt_time + fit_time)/60
+        df[f'{benchmark.name}_extra'] = (hyperopt_time + fit_time)/fit_time
+        df[f'{benchmark.name}_time'] = times
+        df[f'{benchmark.name}_mse'] = benchmark.get_agg_metric(
+            "test_mse_norm", np.mean)
+    min_model = df.loc[
+        :, [col for col in df.columns if "time" in col]].idxmin(
+            axis=1).str.replace("_time", "")
+    max_model = df.loc[
+        :, [col for col in df.columns if "time" in col]].idxmax(
+            axis=1).str.replace("_time", "")
+    best_model = df.loc[
+        :, [col for col in df.columns if "mse" in col]].idxmin(
+            axis=1).str.replace("_mse", "")
+    best_mse = df.loc[
+        :, [col for col in df.columns if "mse" in col]].min(axis=1)
+    best_time = [df.loc[ix, f'{best}_time']
+                 for ix, best in zip(best_model.index, best_model)]
+
+    df["best_model"] = best_model
+    df["min"] = min_model
+    df["max"] = max_model
+    for col in [col for col in df.columns if "time" in col]:
+        df[f'{col}_wrt_best'] = (df[col]/best_time)
+    for col in [col for col in df.columns if "mse" in col]:
+        df[f'{col}_wrt_best'] = (df[col]/best_mse)
+    dfs["all"] = df
+    dfs["time"] = df.loc[
+        :, [col for col in df.columns if (
+            ("time" in col and "wrt" not in col)
+            or "train_N" in col or "min" in col
+            or "max" in col or
+            "best_model" in col)]].set_index("train_N").T.rename_axis("model")
+    for benchmark in benchmark_list:
+        dfs[benchmark.name] = df.loc[:, [
+            col for col in df.columns
+            if benchmark.name in col or "train_N" in col]]
+
+    if save_dir is not None:
+        pd.set_option('display.float_format', '{:.2g}'.format)
+        for df in dfs:
+            if df == "all":
+                continue
+            else:
+                save_name = "time" if df == "time" else f"{df}_time"
+                dfi.export(dfs[df],
+                           os.path.join(save_dir,
+                                        f"{name}_hypertune_{save_name}.png"),
+                           table_conversion='chrome',
+                           chrome_path='/usr/bin/brave-browser')
+    return dfs
