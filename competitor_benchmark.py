@@ -173,8 +173,11 @@ class Competitor:
         if self.hyper_tune:
             if verbose > 0:
                 print("Random search hyperparameter optimization")
+            ixs_hypertune = replication_ixs[:1]
+            X_train = X[ixs_hypertune[0][0]]
+            y_train = y[ixs_hypertune[0][0]]
             self.hyperparameter_tune(
-                X, y, n_iter=hypertune_iter, cv=replication_ixs[:1],
+                X_train, y_train, n_iter=hypertune_iter, cv=5,
                 random_state=random_state, verbose=verbose)
             if verbose > 0:
                 print(f"Found best hyperparameters in {hypertune_iter} iters.")
